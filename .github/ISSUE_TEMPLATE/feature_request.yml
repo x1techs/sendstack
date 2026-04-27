@@ -1,0 +1,66 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["type: feature", "status: needs-triage"]
+
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem this solves
+      description: What problem are you facing? Be specific.
+      placeholder: "What problem are you facing?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed solution
+      description: How should SendStack solve this problem?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you consider, and why did you rule them out?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Affected area
+      options:
+        - Core
+        - Mailer
+        - Admin UI
+        - REST API
+        - Logging
+        - Alerts
+        - Setup Wizard
+        - Documentation
+        - CI/CD
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: willing-to-contribute
+    attributes:
+      label: Would you be willing to contribute a PR?
+      options:
+        - "Yes"
+        - "No"
+        - Maybe
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Screenshots, links, prior art, related issues — anything that helps.
+    validations:
+      required: false

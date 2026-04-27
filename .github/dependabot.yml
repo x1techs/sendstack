@@ -1,0 +1,50 @@
+# Dependabot configuration for SendStack
+#
+# POLICY: Dependabot PRs must be reviewed and merged manually — never auto-merged.
+# Security updates are the exception and should be fast-tracked (same-day review if possible).
+# All PRs target `develop` so they flow through normal CI before reaching `main`.
+
+version: 2
+
+updates:
+  # ── Composer (PHP dependencies) ──────────────────────────────────────────
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    target-branch: "develop"
+    labels:
+      - "type: chore"
+      - "area: ci"
+    reviewers:
+      - "x1techs/sendstack-core"
+    open-pull-requests-limit: 5
+
+  # ── npm (JS/CSS build toolchain) ─────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    target-branch: "develop"
+    labels:
+      - "type: chore"
+      - "area: ci"
+    reviewers:
+      - "x1techs/sendstack-core"
+    open-pull-requests-limit: 5
+
+  # ── GitHub Actions ────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    target-branch: "develop"
+    labels:
+      - "type: chore"
+      - "area: ci"
+    reviewers:
+      - "x1techs/sendstack-core"
+    open-pull-requests-limit: 5

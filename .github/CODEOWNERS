@@ -1,0 +1,29 @@
+# CODEOWNERS — SendStack / x1techs
+#
+# BEFORE ADDING CONTRIBUTORS:
+# 1. Create a GitHub organization named "x1techs" at https://github.com/organizations/new
+# 2. Inside the org, create a team named "sendstack-core"
+# 3. Add members to that team:
+#    - Awais Irfan  (lead)
+#    - Ali Akbar
+#    - Kaleem
+#
+# Until the team exists, CODEOWNERS is inert — GitHub will silently skip reviews.
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ──────────────────────────────────────────────
+# Global owner — every file in the repo
+# ──────────────────────────────────────────────
+*   @x1techs/sendstack-core
+
+# ──────────────────────────────────────────────
+# Future path-specific owners (uncomment + assign when ready)
+# ──────────────────────────────────────────────
+# Mailer layer — uncomment when a dedicated mailer maintainer is added
+# /src/Mailer/   @x1techs/sendstack-core
+
+# Admin UI — uncomment when a dedicated front-end/UX maintainer is added
+# /src/Admin/    @x1techs/sendstack-core
+
+# CI/CD and tooling — uncomment to require a DevOps reviewer on workflow changes
+# /.github/      @x1techs/sendstack-core
