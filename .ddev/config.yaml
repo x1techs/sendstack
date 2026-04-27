@@ -1,0 +1,23 @@
+# .ddev/config.yaml
+name: sendstack
+type: wordpress
+docroot: wordpress
+php_version: "7.4"
+webserver_type: nginx-fpm
+database:
+  type: mysql
+  version: "8.0"
+nodejs_version: "20"
+composer_version: "2"
+xdebug_enabled: false
+disable_settings_management: false
+
+web_environment:
+  - WP_ENVIRONMENT_TYPE=development
+
+hooks:
+  post-start:
+    - exec: bash /var/www/html/.ddev/wp-setup.sh
+
+additional_hostnames: []
+additional_fqdns: []

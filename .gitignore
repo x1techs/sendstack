@@ -1,0 +1,85 @@
+# =============================================================================
+# SendStack — .gitignore
+# =============================================================================
+
+# ── WordPress install ─────────────────────────────────────────────────────────
+# DDEV auto-downloads and installs WP into ./wordpress/ on first start.
+# It is never committed — regenerate with `make setup` or `make reset`.
+/wordpress/
+
+# ── Composer ──────────────────────────────────────────────────────────────────
+/vendor/
+composer.phar
+
+# ── Node / npm ────────────────────────────────────────────────────────────────
+/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Build artifacts ───────────────────────────────────────────────────────────
+# assets/build/ is gitignored during development.
+#
+# Strategy: the SVN deploy CI workflow (Step 3) runs the JS/CSS build as
+# part of the deploy job from a clean tag checkout, then commits the compiled
+# assets to SVN trunk. We do NOT commit build artifacts to Git. If you need
+# a distributable zip locally, run `make zip`.
+/assets/build/
+/dist/
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+# Note: allow .vscode/extensions.json if added later (re-add with !.vscode/extensions.json)
+*.sublime-project
+*.sublime-workspace
+*.sublime-*
+.nova/
+
+# ── OS artifacts ──────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── DDEV internal ─────────────────────────────────────────────────────────────
+# Commit: .ddev/config.yaml, .ddev/config.mailpit.yaml,
+#         .ddev/docker-compose.plugin-mount.yaml, .ddev/wp-setup.sh
+# Ignore: everything DDEV generates at runtime
+.ddev/.global_commands/
+.ddev/import-db/
+.ddev/import.yaml
+.ddev/db_snapshots/
+.ddev/.homeadditions/
+.ddev/.dbimageBuild/
+.ddev/.webimageBuild/
+.ddev/.sshimageBuild/
+.ddev/traefik/
+.ddev/xhprof/
+
+# ── PHP tooling ───────────────────────────────────────────────────────────────
+.phpunit.result.cache
+.phpunit.cache/
+.phpcs-cache
+/coverage/
+/build/logs/
+
+# ── Env files ─────────────────────────────────────────────────────────────────
+# .env holds per-developer overrides and must never be committed.
+# .env.example IS committed — it documents all available variables.
+.env
+.env.local
+.env.*.local
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+
+# ── Backups / swap ────────────────────────────────────────────────────────────
+*.bak
+*.swp
+*.swo
+*~

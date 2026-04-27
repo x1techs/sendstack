@@ -1,0 +1,73 @@
+# =============================================================================
+# SendStack — .distignore
+#
+# Used by the 10up/action-wordpress-plugin-deploy GitHub Action to determine
+# which files are EXCLUDED when syncing to WordPress.org SVN trunk.
+#
+# Syntax: one path per line, relative to repo root.
+# Paths ending with / match directories. No glob expansion.
+#
+# Rule of thumb: anything not needed by an end-user running the plugin on
+# their WordPress site should be listed here.
+#
+# Keep in sync with the export-ignore lines in .gitattributes.
+# =============================================================================
+
+# ── Dev environment ───────────────────────────────────────────────────────────
+.ddev/
+wordpress/
+
+# ── CI / GitHub ───────────────────────────────────────────────────────────────
+.github/
+
+# ── Git metadata ──────────────────────────────────────────────────────────────
+.gitignore
+.gitattributes
+.git/
+
+# ── Tests ─────────────────────────────────────────────────────────────────────
+tests/
+phpcs.xml.dist
+phpstan.neon.dist
+phpunit.xml.dist
+
+# ── Documentation (developer-facing; user docs in readme.txt are kept) ────────
+docs/
+CONTRIBUTING.md
+CHANGELOG.md
+# readme.md is the GitHub-facing doc — readme.txt is the WordPress.org doc (kept)
+readme.md
+
+# ── Build / dependency tooling ────────────────────────────────────────────────
+Makefile
+composer.json
+composer.lock
+package.json
+package-lock.json
+webpack.config.js
+node_modules/
+vendor/
+
+# Note on vendor/: runtime Composer deps (if any) must be scoped via
+# PHP-Scoper before shipping. For v1.0 SendStack has no runtime Composer deps,
+# so vendor/ is dev-only and excluded. Revisit if runtime deps are added.
+
+# ── Editor / OS / pre-commit ──────────────────────────────────────────────────
+.editorconfig
+.pre-commit-config.yaml
+.env
+.env.example
+.DS_Store
+Thumbs.db
+
+# ── Build artifacts that are NOT pre-built for SVN ───────────────────────────
+# The CI deploy action builds assets fresh on each tagged release.
+# Adjust here if you switch to pre-committing compiled assets.
+assets/src/
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+dist/
+coverage/
+*.log
+*.bak
+*.swp

@@ -1,0 +1,16 @@
+# .ddev/docker-compose.plugin-mount.yaml
+#
+# Bind-mounts the repository root (one level above .ddev/) into the
+# WordPress plugins directory so the working copy IS the plugin — no
+# sync step, no manual copying. Edits to src/ are live immediately.
+#
+# The :cached flag is a macOS Docker Desktop performance hint: it allows
+# the container to serve slightly stale reads in exchange for dramatically
+# faster write throughput on the host side. On Linux/WSL2 it is a no-op.
+
+version: "3.6"
+
+services:
+  web:
+    volumes:
+      - "../:/var/www/html/wordpress/wp-content/plugins/sendstack:cached"

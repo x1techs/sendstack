@@ -1,0 +1,65 @@
+# =============================================================================
+# SendStack — .editorconfig
+# https://editorconfig.org
+# =============================================================================
+
+root = true
+
+# ── All files ─────────────────────────────────────────────────────────────────
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ── PHP — tabs per WordPress core convention and WPCS defaults ────────────────
+# PHPCS WordPress ruleset enforces tab indentation for PHP.
+[*.php]
+indent_style = tab
+indent_size = 4
+
+# ── JavaScript / TypeScript ───────────────────────────────────────────────────
+[*.{js,mjs,cjs,jsx,ts,tsx}]
+indent_style = space
+indent_size = 4
+
+# ── Stylesheets ───────────────────────────────────────────────────────────────
+[*.{css,scss,sass}]
+indent_style = space
+indent_size = 4
+
+# ── JSON ──────────────────────────────────────────────────────────────────────
+[*.json]
+indent_style = space
+indent_size = 2
+
+# ── YAML ──────────────────────────────────────────────────────────────────────
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# ── Markdown ──────────────────────────────────────────────────────────────────
+[*.md]
+indent_style = space
+indent_size = 2
+# Preserve trailing spaces in Markdown — they create hard line breaks (<br>)
+trim_trailing_whitespace = false
+
+# ── Shell scripts ─────────────────────────────────────────────────────────────
+[*.sh]
+indent_style = space
+indent_size = 2
+
+# ── Makefile — MUST use hard tabs; spaces will break make ─────────────────────
+[Makefile]
+indent_style = tab
+
+# ── WordPress i18n files ──────────────────────────────────────────────────────
+[*.{pot,po}]
+indent_style = space
+indent_size = 2
+
+# ── XML (phpcs.xml.dist, phpunit.xml.dist, etc.) ──────────────────────────────
+[*.xml]
+indent_style = space
+indent_size = 2

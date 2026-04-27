@@ -1,0 +1,19 @@
+# .ddev/config.mailpit.yaml
+#
+# This file activates the Mailpit add-on for DDEV.
+#
+# It is equivalent to running `ddev get ddev/ddev-mailpit` but committed
+# here so every team member gets Mailpit automatically on `ddev start`
+# without running any extra commands. Committing add-on config is the
+# DDEV-recommended team distribution approach.
+#
+# Mailpit web UI:  https://sendstack.ddev.site:8026
+# Mailpit SMTP:    sendstack.ddev.site:1025  (from host)
+#                  localhost:1025             (from inside container)
+#
+# The wp-setup.sh script configures WordPress to relay all wp_mail()
+# calls through this SMTP endpoint so nothing leaves the local machine.
+
+mailpit:
+  http_port: "8025"
+  https_port: "8026"
