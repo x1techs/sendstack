@@ -83,3 +83,5 @@ $RECYCLE.BIN/
 *.swp
 *.swo
 *~
+# Windows Zone.Identifier metadata files
+*:Zone.Identifier
