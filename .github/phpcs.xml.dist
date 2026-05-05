@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<ruleset name="SendStack">
+    <description>PHPCS configuration for SendStack — enforces WordPress Coding Standards.</description>
+
+    <!-- Encoding and tab width to match WordPress conventions -->
+    <arg name="encoding" value="UTF-8"/>
+    <arg name="tab-width" value="4"/>
+
+    <!-- Human-readable output with colours; show sniff codes so errors are Googleable -->
+    <arg name="colors"/>
+    <arg value="sp"/>
+
+    <!-- Only scan plugin source files. Tests and compiled output are excluded below. -->
+    <file>sendstack.php</file>
+    <file>uninstall.php</file>
+    <file>src/</file>
+
+    <!-- Exclude generated/third-party directories and tests.
+         Tests use helpers (e.g. Brain Monkey) that intentionally violate naming rules. -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/assets/build/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+    <exclude-pattern>*/wordpress/*</exclude-pattern>
+
+    <!-- ───────────────────────────────────────────────────
+         Base rulesets
+         WordPress       = core WP style (tabs, Yoda conditions, brace placement)
+         WordPress-Extra = stricter checks (no eval, no error suppression, etc.)
+         WordPress-Docs  = docblock requirements (all public methods need @since, @param, @return)
+         ─────────────────────────────────────────────────── -->
+    <rule ref="WordPress"/>
+    <rule ref="WordPress-Extra"/>
+    <rule ref="WordPress-Docs"/>
+
+    <!-- ───────────────────────────────────────────────────
+         i18n: enforce consistent text domain.
+         Every __(), _e(), esc_html__(), etc. must pass 'sendstack' as the domain.
+         WP.org review rejects plugins with mismatched or missing text domains.
+         ─────────────────────────────────────────────────── -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array" value="sendstack"/>
+        </properties>
+    </rule>
+
+    <!-- ───────────────────────────────────────────────────
+         Global prefix enforcement.
+         Prevents collision with other plugins in the global namespace.
+         WP.org review will reject any unprefixed global functions, constants,
+         or class names. We allow three prefixes to cover different conventions:
+           sendstack_  → functions and constants
+           sstk_       → shorthand alias (e.g. action hooks)
+           SendStack   → namespace root (PSR-4 class names)
+         ─────────────────────────────────────────────────── -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array" value="sendstack,sstk,SendStack"/>
+        </properties>
+    </rule>
+
+    <!-- ───────────────────────────────────────────────────
+         PHP cross-version compatibility.
+         PHPCompatibilityWP checks that we don't use PHP features unavailable
+         on our minimum (7.4) or functions deprecated/removed by our maximum (8.3).
+         It also checks WP-specific compat (e.g. wp_json_encode vs json_encode).
+         Requires phpcompatibility/phpcompatibility-wp in composer.json.
+         ─────────────────────────────────────────────────── -->
+    <rule ref="PHPCompatibilityWP">
+        <properties>
+            <property name="testVersion" value="7.4-8.3"/>
+            <property name="minimum_wp_version" value="6.2"/>
+        </properties>
+    </rule>
+
+    <!-- ───────────────────────────────────────────────────
+         Disable WP filename convention for class files.
+         WordPress expects class-my-class-name.php (kebab-case).
+         We use PSR-4 (MyClassName.php, PascalCase) because autoloading
+         via Composer classmap is cleaner and faster than WP's require-once chains.
+         WP.org review does NOT mandate the filename sniff — it's advisory.
+         ─────────────────────────────────────────────────── -->
+    <rule ref="WordPress.Files.FileName">
+        <properties>
+            <property name="strict_class_file_names" value="false"/>
+        </properties>
+    </rule>
+
+    <!-- ───────────────────────────────────────────────────
+         Line length.
+         WP default is 100 chars (warn) / 100 chars (error).
+         We relax to 120/150 because PSR-4 class files have long use-statements
+         and fully-qualified type hints. The spirit of the rule (readability)
+         is still enforced; we're just accommodating modern PHP idioms.
+         ─────────────────────────────────────────────────── -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+            <property name="absoluteLineLimit" value="150"/>
+        </properties>
+    </rule>
+
+</ruleset>

@@ -1,0 +1,99 @@
+# .github/workflows/deploy.yml
+#
+# Deploys the plugin to WordPress.org SVN when a version tag is pushed.
+#
+# Prerequisites before first deploy:
+#   1. Add WP_ORG_SVN_USERNAME secret in repo Settings → Secrets → Actions
+#   2. Add WP_ORG_SVN_PASSWORD secret (use an application password, not your WP.org password)
+#   3. Ensure the plugin slug "sendstack" is claimed on WordPress.org
+#
+# The .distignore file (repo root) controls what is EXCLUDED from SVN.
+# Dev tooling (tests/, composer.json, .github/, node_modules/, etc.)
+# should be listed there so the SVN trunk stays clean.
+#
+# This workflow intentionally does NOT run on every push to main.
+# Pushing to main during development would pollute the WP.org trunk.
+# Tags represent intentional, versioned releases only.
+
+name: Deploy to WordPress.org
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # Matches v1.0.0, v1.2.3, v2.0.0-rc1 — NOT bare commits
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false   # Never cancel a deploy mid-flight.
+
+jobs:
+  deploy:
+    name: "Deploy ${{ github.ref_name }} → WordPress.org SVN"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Full history required so the deploy action can read tags correctly.
+
+      # Fail fast if someone pushes a malformed tag like "v1.0" or "version-1.0.0".
+      # Semver enforcement prevents partial/broken releases reaching WP.org.
+      - name: Validate semver tag format
+        run: |
+          TAG="${{ github.ref_name }}"
+          if ! echo "$TAG" | grep -qP '^v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Tag '$TAG' does not match semver format vMAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          echo "Tag format valid: $TAG"
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+          tools: composer:v2
+
+      # Production-only install: no dev dependencies (PHPStan, PHPUnit, PHPCS)
+      # go into SVN. --optimize-autoloader generates a classmap for faster
+      # autoloading in production (no filesystem scanning).
+      - name: Install Composer dependencies (production only)
+        run: |
+          if [ -f composer.json ]; then
+            composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+          else
+            echo "No composer.json found — skipping Composer install."
+          fi
+
+      # Build JS/CSS assets if package.json exists.
+      # Placeholder until the build pipeline is introduced in Step 7.
+      - name: Build frontend assets
+        run: |
+          if [ -f package.json ]; then
+            echo "package.json found — building assets."
+            npm ci
+            npm run build
+          else
+            echo "No package.json found — skipping asset build."
+          fi
+
+      # The deploy action reads SVN credentials from secrets and handles:
+      #   - Creating/updating SVN trunk from BUILD_DIR
+      #   - Creating an SVN tag matching the Git tag (strips leading "v")
+      #   - Syncing ASSETS_DIR to the WP.org /assets/ directory (banners, icons)
+      - name: Deploy to WordPress.org
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.WP_ORG_SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.WP_ORG_SVN_PASSWORD }}
+          SLUG: sendstack
+          BUILD_DIR: .         # Repo root is the plugin root (Option A layout).
+          ASSETS_DIR: images   # WP.org banner/icon PNGs live here, not in the plugin itself.
+
+      - name: Print post-deploy summary
+        run: |
+          VERSION="${{ github.ref_name }}"
+          echo "✅ SendStack ${VERSION} deployed successfully."
+          echo "   View on WordPress.org: https://wordpress.org/plugins/sendstack/"
+          echo "   SVN tag created: ${VERSION#v}"

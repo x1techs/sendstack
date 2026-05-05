@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+    bootstrap="tests/bootstrap.php"
+    colors="true"
+    verbose="false"
+    stopOnFailure="false"
+>
+    <!--
+        stopOnFailure="false" — Run all tests even when one fails.
+        On CI we want the full picture: one failure shouldn't hide ten others.
+        Local development: run with -\-stop-on-failure if you prefer fast feedback.
+
+        verbose="false" — PHPUnit's verbose mode prints each test name.
+        Clean CI logs are easier to scan for actual failures; progress dots suffice.
+    -->
+
+    <testsuites>
+        <!--
+            Unit suite: no database, no WP bootstrap required.
+            Uses WP_Mock / Brain Monkey to mock WP functions.
+            Runs in <2 seconds. Should always run on every PR.
+        -->
+        <testsuite name="Unit">
+            <directory>tests/Unit/</directory>
+        </testsuite>
+
+        <!--
+            Integration suite: requires a live WP install + test DB.
+            Bootstraps the full WP test suite (WP_TESTS_DIR env var).
+            Slower (~30s+). Skips gracefully if WP_TESTS_DIR is not set.
+            On CI, integration tests run in the DDEV environment via Makefile.
+        -->
+        <testsuite name="Integration">
+            <directory>tests/Integration/</directory>
+        </testsuite>
+    </testsuites>
+
+    <coverage>
+        <!--
+            Include only src/ — plugin code we own and can improve.
+            Exclude src/Core/ because activator/deactivator/bootstrap hooks
+            are trivial glue code whose "tests" would just assert that
+            register_activation_hook() was called — not meaningful coverage.
+        -->
+        <include>
+            <directory suffix=".php">src/</directory>
+        </include>
+        <exclude>
+            <directory suffix=".php">src/Core/</directory>
+        </exclude>
+
+        <report>
+            <!-- text: prints coverage summary to CI stdout after test run -->
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+            <!-- clover: machine-readable XML for coverage badge services (Codecov, etc.) -->
+            <clover outputFile="coverage/clover.xml"/>
+        </report>
+    </coverage>
+
+    <php>
+        <!--
+            Integration test environment variables.
+            These are not set during unit test runs — tests/bootstrap.php
+            should detect their absence and skip integration tests gracefully
+            rather than throwing a fatal error.
+        -->
+        <env name="WP_TESTS_DIR" value=""/>
+        <env name="WP_DB_NAME" value="sendstack_test"/>
+        <env name="WP_DB_USER" value="db"/>
+        <env name="WP_DB_PASSWORD" value="db"/>
+        <env name="WP_DB_HOST" value="db"/>
+    </php>
+
+</phpunit>

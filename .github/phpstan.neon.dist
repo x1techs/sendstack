@@ -1,0 +1,59 @@
+# phpstan.neon.dist
+#
+# PHPStan static analysis configuration for SendStack.
+#
+# Level 5 rationale:
+#   - Levels 0–4 miss real bugs (wrong param types, undefined variables).
+#   - Level 5 catches them without the false-positive noise of 6–8.
+#   - WP's heavy use of mixed returns, dynamic hooks, and magic methods
+#     causes levels 6+ to generate hundreds of irrelevant errors.
+#     Level 5 is the practical sweet spot for WP plugin development.
+#
+# WordPress extension (szepeviktor/phpstan-wordpress):
+#   Adds type signatures for WP core functions (get_post(), add_action(), etc.)
+#   so PHPStan understands what WP_Post|false means, not just "mixed".
+#   The extension.neon path below resolves ONLY after `composer install`.
+
+includes:
+    # This path resolves after `composer install`.
+    # If the file is missing, PHPStan will error — run composer install first.
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+
+    level: 5
+
+    paths:
+        - src/
+        - sendstack.php
+        - uninstall.php
+
+    excludePaths:
+        - vendor/
+        - wordpress/
+        - assets/build/
+
+    # scanFiles lets PHPStan parse the main plugin file for constants
+    # (SENDSTACK_VERSION, SENDSTACK_FILE, etc.) defined at bootstrap.
+    scanFiles:
+        - sendstack.php
+
+    # bootstrapFiles would load WP function stubs here once composer.json
+    # includes php-stubs/wordpress-stubs. Leaving empty until Step 7.
+    bootstrapFiles: []
+
+    ignoreErrors:
+        # "new static()" is idiomatic WordPress (singleton getInstance pattern).
+        # PHPStan flags it as unsafe because static:: can resolve to a subclass
+        # with a different constructor signature — acceptable risk here.
+        - '#Unsafe usage of new static#'
+
+        # ABSPATH checks (defined('ABSPATH') || exit) are a WordPress security
+        # convention. PHPStan doesn't understand this as a guard clause.
+        - '#Call to function defined\(\) with .ABSPATH. will always evaluate to#'
+
+    wordpress:
+        # Point PHPStan to the WordPress install in the DDEV environment.
+        # Used for global function resolution ($wpdb, $wp_query, etc.).
+        # Adjust this path if your local env differs from DDEV's layout.
+        rootDir: wordpress/

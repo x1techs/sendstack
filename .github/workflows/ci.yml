@@ -1,0 +1,176 @@
+# .github/workflows/ci.yml
+#
+# Badge URLs — paste into readme.md after repo is public:
+#   CI: https://github.com/x1techs/sendstack/actions/workflows/ci.yml/badge.svg
+#   ![CI](https://github.com/x1techs/sendstack/actions/workflows/ci.yml/badge.svg?branch=develop)
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# Cancel in-progress runs on the same branch when a new push arrives.
+# Prevents queued-up stale runs consuming runner minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 1: PHPCS — WordPress Coding Standards
+  # Runs on PHP 7.4 only. PHPCS output is version-independent;
+  # matrixing this job would waste minutes for zero signal gain.
+  # ─────────────────────────────────────────────────────────────
+  lint:
+    name: "PHPCS — WordPress Coding Standards"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-php74-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-php74-
+
+      # Graceful skip: composer.json won't exist until Step 7.
+      # continue-on-error keeps the job green so PRs aren't blocked
+      # before the project is fully bootstrapped.
+      - name: Check for composer.json
+        id: composer_check
+        run: |
+          if [ ! -f composer.json ]; then
+            echo "composer.json not found, skipping lint job."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Composer dependencies
+        if: steps.composer_check.outputs.skip == 'false'
+        run: composer install --prefer-dist --no-progress --no-interaction
+        continue-on-error: true
+
+      - name: Run PHPCS
+        if: steps.composer_check.outputs.skip == 'false'
+        run: composer run lint
+        continue-on-error: true
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2: PHPStan — Static Analysis (Level 5)
+  # Same PHP 7.4-only rationale as lint.
+  # ─────────────────────────────────────────────────────────────
+  analyze:
+    name: "PHPStan — Static Analysis (Level 5)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-php74-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-php74-
+
+      - name: Check for composer.json
+        id: composer_check
+        run: |
+          if [ ! -f composer.json ]; then
+            echo "composer.json not found, skipping analyze job."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Composer dependencies
+        if: steps.composer_check.outputs.skip == 'false'
+        run: composer install --prefer-dist --no-progress --no-interaction
+        continue-on-error: true
+
+      - name: Run PHPStan
+        if: steps.composer_check.outputs.skip == 'false'
+        run: composer run analyze
+        continue-on-error: true
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3: PHPUnit — Test Suite
+  # Matrix across all supported PHP versions. A bug that surfaces
+  # only on PHP 8.2 (e.g. deprecated dynamic property) would be
+  # invisible if we only tested on 7.4.
+  # continue-on-error: false — test failures MUST block PRs.
+  # ─────────────────────────────────────────────────────────────
+  test:
+    name: "PHPUnit — Test Suite (PHP ${{ matrix.php }})"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false   # Run all matrix versions even if one fails — full picture.
+      matrix:
+        php: ["7.4", "8.0", "8.1", "8.2", "8.3"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, mysql, xml, zip, intl
+          coverage: xdebug   # needed for clover coverage report
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-php${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-php${{ matrix.php }}-
+
+      - name: Check for composer.json
+        id: composer_check
+        run: |
+          if [ ! -f composer.json ]; then
+            echo "composer.json not found, skipping test job."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install Composer dependencies
+        if: steps.composer_check.outputs.skip == 'false'
+        run: composer install --prefer-dist --no-progress --no-interaction
+        continue-on-error: true
+
+      - name: Run PHPUnit
+        if: steps.composer_check.outputs.skip == 'false'
+        run: composer run test
+        # No continue-on-error here — test failures block the PR.
