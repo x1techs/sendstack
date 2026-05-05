@@ -128,7 +128,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Create InstaWP preview site
         id: instawp
-        uses: instawp/connect@v2
+        uses: instawp/wordpress-testing-automation@v4
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INSTAWP_API_KEY: ${{ secrets.INSTAWP_API_KEY }}
