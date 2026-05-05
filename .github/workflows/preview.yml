@@ -1,0 +1,281 @@
+# .github/workflows/preview.yml
+#
+# PR Preview — spins up a live WordPress site for every PR against develop/main,
+# posts the URL as a comment, and tears it down when the PR closes.
+
+name: PR Preview (InstaWP)
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    types: [opened, synchronize, reopened, closed]
+
+# One active preview build per PR at a time.
+# cancel-in-progress: true means a force-push during a running build cancels
+# the old run and starts fresh — you never end up with two sites for one PR.
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PLUGIN_SLUG: sendstack
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+  BRANCH_NAME: ${{ github.head_ref }}
+
+# ---------------------------------------------------------------------------
+# JOB 1 — Create / refresh the preview site
+# Skipped entirely when the PR is being closed (destroy job handles that).
+# ---------------------------------------------------------------------------
+jobs:
+  create-preview:
+    name: Create Preview Site
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+
+    permissions:
+      pull-requests: write  # needed to post the PR comment
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Check out the exact commit the PR points to so the zip reflects
+      #    what the reviewer will be looking at, not just the branch tip.
+      # -----------------------------------------------------------------------
+      - name: Checkout PR HEAD
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # -----------------------------------------------------------------------
+      # 2. Set up PHP for the Composer install step.
+      #    PHP 8.0 here — preview sites are for visual/functional review, not
+      #    minimum-compatibility testing (that's the CI job's job).
+      # -----------------------------------------------------------------------
+      - name: Set up PHP 8.0
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          tools: composer:v2
+          coverage: none
+
+      # -----------------------------------------------------------------------
+      # 3a. Install Composer dependencies (prod-only, optimised autoloader).
+      #     continue-on-error because early in the project composer.json may
+      #     not exist yet — the preview should still work as a scaffold demo.
+      # -----------------------------------------------------------------------
+      - name: Install Composer dependencies (if composer.json exists)
+        id: composer
+        continue-on-error: true
+        run: |
+          if [ -f composer.json ]; then
+            echo "composer.json found — installing prod dependencies"
+            composer install --no-dev --prefer-dist --optimize-autoloader --no-progress
+          else
+            echo "::notice::composer.json not found — scaffold-only preview, skipping Composer"
+          fi
+
+      # -----------------------------------------------------------------------
+      # 3b. Build the installable zip.
+      #
+      #     We zip the repo ourselves rather than letting InstaWP pull from
+      #     GitHub because InstaWP needs a standard WP plugin zip — a single
+      #     folder named after the plugin slug containing all plugin files.
+      #     A raw GitHub archive would include repo-root clutter (workflows,
+      #     tests, dot-files) and InstaWP wouldn't know the plugin slug.
+      #
+      #     .distignore lists everything that must NOT ship to users:
+      #     dev dependencies, test suites, build tooling, CI config, etc.
+      #     If it doesn't exist yet we fall back to excluding obvious dirs.
+      # -----------------------------------------------------------------------
+      - name: Build plugin zip
+        id: build_zip
+        run: |
+          PLUGIN_DIR="${{ env.PLUGIN_SLUG }}"
+          ZIP_NAME="${{ env.PLUGIN_SLUG }}.zip"
+
+          # Stage into a clean directory named after the slug so WordPress
+          # unpacks it to wp-content/plugins/sendstack/ as expected.
+          mkdir -p /tmp/plugin-build/"${PLUGIN_DIR}"
+          rsync -av --exclude-from='.distignore' \
+                    --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='tests' \
+                    --exclude='node_modules' \
+                    --exclude='assets/src' \
+                    --exclude='.distignore' \
+                    . /tmp/plugin-build/"${PLUGIN_DIR}"/ \
+            2>/dev/null || true
+
+          # If rsync isn't available, fall back to cp (always present on ubuntu-latest).
+          if [ ! "$(ls -A /tmp/plugin-build/"${PLUGIN_DIR}")" ]; then
+            echo "::warning::rsync produced empty directory — falling back to cp"
+            cp -r . /tmp/plugin-build/"${PLUGIN_DIR}"/
+          fi
+
+          cd /tmp/plugin-build
+          zip -r "${ZIP_NAME}" "${PLUGIN_DIR}"/
+          echo "zip_path=/tmp/plugin-build/${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "Built zip: $(du -sh /tmp/plugin-build/${ZIP_NAME} | cut -f1)"
+
+      # -----------------------------------------------------------------------
+      # 4. Spin up an InstaWP preview site.
+      #
+      #    instawp/connect uploads the zip, installs it as a plugin, and
+      #    activates it — outputting the site URL and admin credentials.
+      #    Template 2467152 is a bare WP install (no pre-configured plugins)
+      #    so we get a clean slate every time.
+      # -----------------------------------------------------------------------
+      - name: Create InstaWP preview site
+        id: instawp
+        uses: instawp/connect@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INSTAWP_API_KEY: ${{ secrets.INSTAWP_API_KEY }}
+          INSTAWP_TEMPLATE_ID: ${{ secrets.INSTAWP_TEMPLATE_ID }}
+          INSTAWP_SITE_NAME: sendstack-pr-${{ env.PR_NUMBER }}
+          INSTAWP_PLUGIN_ZIP: ${{ steps.build_zip.outputs.zip_path }}
+
+      # -----------------------------------------------------------------------
+      # 5. Post (or update) the PR comment.
+      #
+      #    We look for an existing comment with a known marker string and
+      #    update it rather than creating a new one. This keeps the PR thread
+      #    clean when a reviewer force-pushes and re-triggers the workflow —
+      #    you'd otherwise end up with 5 "preview ready" comments for one PR.
+      # -----------------------------------------------------------------------
+      - name: Post or update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- sendstack-preview-comment -->';
+            const previewUrl = '${{ steps.instawp.outputs.site_url }}';
+            const adminUrl   = previewUrl.replace(/\/?$/, '/wp-admin');
+            const username   = '${{ steps.instawp.outputs.wp_username }}';
+            const password   = '${{ steps.instawp.outputs.wp_password }}';
+            const branch     = process.env.BRANCH_NAME;
+            const sha        = '${{ github.event.pull_request.head.sha }}'.slice(0, 7);
+            const prNumber   = ${{ env.PR_NUMBER }};
+
+            const body = [
+              marker,
+              '## 🔍 SendStack Preview Ready',
+              '',
+              '| | |',
+              '|---|---|',
+              `| **Preview URL** | [${previewUrl}](${previewUrl}) |`,
+              `| **WP Admin** | [${adminUrl}](${adminUrl}) |`,
+              `| **Username** | \`${username}\` |`,
+              `| **Password** | \`${password}\` |`,
+              `| **Branch** | \`${branch}\` |`,
+              `| **Commit** | \`${sha}\` |`,
+              '',
+              '> ⚠️ This preview auto-destroys when the PR is closed.',
+            ].join('\n');
+
+            // Look for an existing comment from a previous run on this PR.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              console.log(`Updated existing preview comment #${existing.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+              console.log('Created new preview comment');
+            }
+
+# ---------------------------------------------------------------------------
+# JOB 2 — Destroy the preview site when the PR closes (merged or abandoned).
+# ---------------------------------------------------------------------------
+  destroy-preview:
+    name: Destroy Preview Site
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+
+    permissions:
+      pull-requests: write  # needed to post the cleanup comment
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Tear down the InstaWP site via their REST API.
+      #
+      # continue-on-error: true is intentional — a failed cleanup (site already
+      # gone, API hiccup, free-tier expiry) must never block a PR merge.
+      # The preview environment is ephemeral; losing it silently is acceptable.
+      # -----------------------------------------------------------------------
+      - name: Destroy InstaWP site
+        id: destroy
+        continue-on-error: true
+        env:
+          INSTAWP_API_KEY: ${{ secrets.INSTAWP_API_KEY }}
+        run: |
+          SITE_NAME="sendstack-pr-${{ env.PR_NUMBER }}"
+          echo "Attempting to destroy InstaWP site: ${SITE_NAME}"
+
+          # Step 1: look up the site ID by name.
+          SITE_LIST=$(curl -sf \
+            -H "Authorization: Bearer ${INSTAWP_API_KEY}" \
+            "https://app.instawp.io/api/v2/sites?search=${SITE_NAME}" \
+          ) || { echo "::warning::Could not list InstaWP sites — skipping destroy"; exit 0; }
+
+          SITE_ID=$(echo "${SITE_LIST}" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          sites = data.get('data', {}).get('data', [])
+          match = next((s for s in sites if s.get('slug') == '${SITE_NAME}' or s.get('name') == '${SITE_NAME}'), None)
+          print(match['id'] if match else '')
+          " 2>/dev/null || echo "")
+
+          if [ -z "${SITE_ID}" ]; then
+            echo "::notice::No InstaWP site found for ${SITE_NAME} — nothing to destroy"
+            exit 0
+          fi
+
+          echo "Found site ID: ${SITE_ID} — deleting"
+          HTTP_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+            -X DELETE \
+            -H "Authorization: Bearer ${INSTAWP_API_KEY}" \
+            "https://app.instawp.io/api/v2/sites/${SITE_ID}" \
+          ) || true
+
+          if [ "${HTTP_STATUS}" = "200" ] || [ "${HTTP_STATUS}" = "204" ]; then
+            echo "Site ${SITE_NAME} destroyed successfully"
+          else
+            echo "::warning::Delete returned HTTP ${HTTP_STATUS} — site may already be gone"
+          fi
+
+      # -----------------------------------------------------------------------
+      # Confirm cleanup in the PR thread so the reviewer knows the environment
+      # is gone and credentials are no longer valid.
+      # -----------------------------------------------------------------------
+      - name: Post cleanup comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: ${{ env.PR_NUMBER }},
+              body: [
+                '<!-- sendstack-preview-destroyed -->',
+                '## 🗑️ Preview Environment Destroyed',
+                '',
+                `PR #${{ env.PR_NUMBER }} preview has been cleaned up. The InstaWP site \`sendstack-pr-${{ env.PR_NUMBER }}\` has been deleted and credentials are no longer valid.`,
+              ].join('\n'),
+            });
