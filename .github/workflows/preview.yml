@@ -131,10 +131,10 @@ jobs:
         uses: instawp/wordpress-testing-automation@v4
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          INSTAWP_API_KEY: ${{ secrets.INSTAWP_API_KEY }}
-          INSTAWP_TEMPLATE_ID: ${{ secrets.INSTAWP_TEMPLATE_ID }}
-          INSTAWP_SITE_NAME: sendstack-pr-${{ env.PR_NUMBER }}
-          INSTAWP_PLUGIN_ZIP: ${{ steps.build_zip.outputs.zip_path }}
+          INSTAWP_TOKEN: ${{ secrets.INSTAWP_TOKEN }}
+          INSTAWP_TEMPLATE_SLUG: ${{ secrets.INSTAWP_TEMPLATE_ID }}
+          REPO_ID: ${{ github.event.repository.id }}
+          INSTAWP_ACTION: create-site
 
       # -----------------------------------------------------------------------
       # 5. Post (or update) the PR comment.
