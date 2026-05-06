@@ -1,0 +1,71 @@
+# =============================================================================
+# SendStack — Pre-commit hooks
+# =============================================================================
+# Fast local checks that run on every `git commit`.
+# CI (GitHub Actions) is the authoritative gate — this is the quick local pass
+# that catches trivial issues in seconds instead of waiting for CI.
+#
+# Install:  pre-commit install
+# Test all: pre-commit run --all-files
+# =============================================================================
+
+default_language_version:
+  python: python3
+
+repos:
+  # ---------------------------------------------------------------------------
+  # Standard file-hygiene hooks (maintained by the pre-commit project)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Remove trailing whitespace from all files.
+      # Markdown excluded: trailing spaces are intentional line-break syntax.
+      - id: trailing-whitespace
+        exclude: '\.md$'
+
+      # Ensure every file ends with exactly one newline.
+      - id: end-of-file-fixer
+
+      # Catch malformed YAML before it breaks CI or Docker configs.
+      - id: check-yaml
+
+      # Catch malformed JSON (composer.json, package.json, etc.).
+      - id: check-json
+
+      # Prevent accidentally committed merge-conflict markers.
+      - id: check-merge-conflict
+
+      # Enforce LF line endings across all files.
+      # Critical: team members develop on WSL2, macOS, and native Windows.
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+      # Block commits containing files over 500 KB.
+      # WordPress.org SVN deploy ships everything not in .distignore.
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+
+  # ---------------------------------------------------------------------------
+  # Project-specific local hooks
+  # ---------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      # Validate composer.json whenever it changes.
+      # Skips gracefully if composer is not installed yet.
+      - id: composer-validate
+        name: Validate composer.json
+        language: script
+        entry: .pre-commit-hooks-composer.sh
+        files: 'composer\.json$'
+        pass_filenames: false
+
+      # Run PHPCS on staged PHP files using phpcs.xml.dist.
+      # Report-only — does NOT auto-fix.
+      # Skips gracefully if vendor/bin/phpcs does not exist yet.
+      - id: phpcs
+        name: PHP_CodeSniffer (report only)
+        language: script
+        entry: .pre-commit-hooks-phpcs.sh
+        types: [php]
+        pass_filenames: true
