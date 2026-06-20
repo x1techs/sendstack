@@ -1,0 +1,110 @@
+<?php
+/**
+ * Discord alert channel.
+ *
+ * @package SendStack\Alerts\Channels
+ * @since   1.0.0
+ */
+
+namespace SendStack\Alerts\Channels;
+
+defined( 'ABSPATH' ) || exit;
+
+use SendStack\Alerts\AlertEvent;
+use SendStack\Alerts\AlertInterface;
+
+/**
+ * Delivers alerts to a Discord channel via a Webhook URL.
+ *
+ * @since 1.0.0
+ */
+class DiscordChannel implements AlertInterface {
+
+	/** @var string Option key for the webhook URL. */
+	private const OPTION_WEBHOOK = 'sendstack_alert_discord_webhook_url';
+
+	/**
+	 * @since  1.0.0
+	 * @return string
+	 */
+	public function slug(): string {
+		return 'discord';
+	}
+
+	/**
+	 * @since  1.0.0
+	 * @return string
+	 */
+	public function label(): string {
+		return __( 'Discord', 'sendstack' );
+	}
+
+	/**
+	 * POST a Discord embed to the configured webhook.
+	 *
+	 * @since  1.0.0
+	 * @param  AlertEvent $event Alert to deliver.
+	 * @return bool True on HTTP 204 response (Discord webhooks return 204 on success).
+	 */
+	public function send( AlertEvent $event ): bool {
+		$webhook_url = (string) get_option( self::OPTION_WEBHOOK, '' );
+
+		if ( '' === $webhook_url ) {
+			return false;
+		}
+
+		$fields = array();
+
+		foreach ( $event->context() as $key => $value ) {
+			$fields[] = array(
+				'name'   => ucfirst( str_replace( '_', ' ', $key ) ),
+				'value'  => (string) $value,
+				'inline' => true,
+			);
+		}
+
+		$body = wp_json_encode(
+			array(
+				'embeds' => array(
+					array(
+						'title'       => $event->title(),
+						'description' => $event->message(),
+						'color'       => 0xED4245, // Discord red.
+						'fields'      => $fields,
+						'footer'      => array( 'text' => 'SendStack' ),
+						'timestamp'   => gmdate( 'c', $event->occurred_at() ),
+					),
+				),
+			)
+		);
+
+		$response = wp_remote_post(
+			$webhook_url,
+			array(
+				'headers' => array( 'Content-Type' => 'application/json' ),
+				'body'    => $body,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+
+		return 204 === wp_remote_retrieve_response_code( $response );
+	}
+
+	/**
+	 * Validate that the webhook URL is a Discord webhook.
+	 *
+	 * @since  1.0.0
+	 * @param  array $config Submitted config; expects key 'webhook_url'.
+	 * @return bool
+	 */
+	public function validate_config( array $config ): bool {
+		$url = (string) ( $config['webhook_url'] ?? '' );
+
+		return '' !== $url
+			&& filter_var( $url, FILTER_VALIDATE_URL ) !== false
+			&& str_starts_with( $url, 'https://discord.com/api/webhooks/' );
+	}
+}

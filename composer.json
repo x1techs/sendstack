@@ -1,0 +1,49 @@
+{
+	"name": "sendstack/sendstack",
+	"description": "Reliable email delivery for WordPress — multiple SMTP and API providers, logging, failover, and alerts.",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "X1techs",
+			"email": "support@x1techs.com",
+			"homepage": "https://x1techs.com"
+		}
+	],
+	"require": {
+		"php": ">=7.4"
+	},
+	"require-dev": {
+		"wp-coding-standards/wpcs": "^3.0",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"phpstan/phpstan": "^1.10",
+		"szepeviktor/phpstan-wordpress": "^1.3",
+		"phpunit/phpunit": "^9.6",
+		"brain/monkey": "^2.6",
+		"10up/wp_mock": "^1.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"SendStack\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"SendStack\\Tests\\": "tests/"
+		}
+	},
+	"scripts": {
+		"lint": "phpcs",
+		"lint:fix": "phpcbf",
+		"analyze": "phpstan analyse --configuration=phpstan.neon.dist",
+		"test": "phpunit",
+		"test:unit": "phpunit --testsuite Unit",
+		"test:integration": "phpunit --testsuite Integration"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

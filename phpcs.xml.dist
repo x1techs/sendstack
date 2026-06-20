@@ -84,6 +84,8 @@
         <properties>
             <property name="strict_class_file_names" value="false"/>
         </properties>
+        <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
     </rule>
 
     <!-- ───────────────────────────────────────────────────
