@@ -37,9 +37,9 @@
 		"lint": "phpcs",
 		"lint:fix": "phpcbf",
 		"analyze": "phpstan analyse --configuration=phpstan.neon.dist",
-		"test": "phpunit",
-		"test:unit": "phpunit --testsuite Unit",
-		"test:integration": "phpunit --testsuite Integration"
+		"test": "vendor/bin/phpunit",
+		"test:unit": "vendor/bin/phpunit --testsuite Unit",
+		"test:integration": "vendor/bin/phpunit --testsuite Integration"
 	},
 	"config": {
 		"allow-plugins": {
