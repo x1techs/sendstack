@@ -21,7 +21,8 @@
 		"szepeviktor/phpstan-wordpress": "^1.3",
 		"phpunit/phpunit": "^9.6",
 		"brain/monkey": "^2.6",
-		"10up/wp_mock": "^1.0"
+		"10up/wp_mock": "^1.0",
+		"doctrine/instantiator": "^1.0"
 	},
 	"autoload": {
 		"psr-4": {
