@@ -52,8 +52,3 @@ parameters:
         # convention. PHPStan doesn't understand this as a guard clause.
         - '#Call to function defined\(\) with .ABSPATH. will always evaluate to#'
 
-    wordpress:
-        # Point PHPStan to the WordPress install in the DDEV environment.
-        # Used for global function resolution ($wpdb, $wp_query, etc.).
-        # Adjust this path if your local env differs from DDEV's layout.
-        rootDir: wordpress/

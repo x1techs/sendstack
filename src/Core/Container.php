@@ -72,7 +72,13 @@ class Container {
 		}
 
 		// Fall back to direct instantiation for unregistered concrete classes.
-		return new $abstract();
+		if ( class_exists( $abstract ) ) {
+			return new $abstract();
+		}
+
+		throw new \RuntimeException(
+			sprintf( 'Cannot resolve [%s] from the SendStack container.', $abstract )
+		);
 	}
 
 	/**

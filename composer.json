@@ -21,7 +21,8 @@
 		"szepeviktor/phpstan-wordpress": "^1.3",
 		"phpunit/phpunit": "^9.6",
 		"brain/monkey": "^2.6",
-		"10up/wp_mock": "^1.0"
+		"10up/wp_mock": "^1.0",
+		"doctrine/instantiator": "^1.0"
 	},
 	"autoload": {
 		"psr-4": {
@@ -37,9 +38,9 @@
 		"lint": "phpcs",
 		"lint:fix": "phpcbf",
 		"analyze": "phpstan analyse --configuration=phpstan.neon.dist",
-		"test": "phpunit",
-		"test:unit": "phpunit --testsuite Unit",
-		"test:integration": "phpunit --testsuite Integration"
+		"test": "vendor/bin/phpunit",
+		"test:unit": "vendor/bin/phpunit --testsuite Unit",
+		"test:integration": "vendor/bin/phpunit --testsuite Integration"
 	},
 	"config": {
 		"allow-plugins": {
