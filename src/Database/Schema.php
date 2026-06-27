@@ -47,33 +47,40 @@ class Schema {
 		switch ( $table ) {
 			case 'sendstack_logs':
 				return "CREATE TABLE {$full_table} (
-  id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  status varchar(20) NOT NULL DEFAULT 'queued',
-  provider varchar(50) NOT NULL DEFAULT '',
-  `to` text NOT NULL,
-  subject varchar(255) NOT NULL DEFAULT '',
-  body longtext NOT NULL,
-  headers text NOT NULL,
-  attachments text NOT NULL,
-  error_code varchar(50) NOT NULL DEFAULT '',
-  error_message text NOT NULL,
-  provider_response text NOT NULL,
-  sent_at datetime DEFAULT NULL,
-  created_at datetime NOT NULL,
+  id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  message_id VARCHAR(64) DEFAULT '',
+  status VARCHAR(20) NOT NULL DEFAULT 'queued',
+  provider VARCHAR(32) DEFAULT '',
+  from_email VARCHAR(190) DEFAULT '',
+  to_json LONGTEXT,
+  cc_json LONGTEXT,
+  bcc_json LONGTEXT,
+  subject VARCHAR(255) DEFAULT '',
+  body_mime LONGTEXT,
+  headers_json LONGTEXT,
+  attachments_json LONGTEXT,
+  error_code VARCHAR(50) DEFAULT '',
+  error_message TEXT,
+  attempt_count TINYINT(3) UNSIGNED NOT NULL DEFAULT 1,
+  is_retry TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+  source VARCHAR(50) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY  (id),
-  KEY status (status),
-  KEY created_at (created_at)
+  KEY idx_status_created (status, created_at),
+  KEY idx_created (created_at),
+  KEY idx_from (from_email)
 ) {$charset_collate};";
 
 			case 'sendstack_stats':
 				return "CREATE TABLE {$full_table} (
-  id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  metric varchar(50) NOT NULL,
-  value bigint(20) UNSIGNED NOT NULL DEFAULT 0,
-  stat_date date NOT NULL,
-  created_at datetime NOT NULL,
+  id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  stat_date DATE NOT NULL,
+  provider VARCHAR(32) NOT NULL DEFAULT '',
+  status VARCHAR(20) NOT NULL DEFAULT '',
+  count BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY  (id),
-  UNIQUE KEY metric_date (metric, stat_date)
+  UNIQUE KEY idx_date_provider_status (stat_date, provider, status)
 ) {$charset_collate};";
 
 			default:
@@ -81,3 +88,38 @@ class Schema {
 		}
 	}
 }
+
+/*
+ * Concepts in this file
+ * =====================
+ *
+ * Why dbDelta and not raw CREATE TABLE:
+ *   dbDelta() compares the desired DDL against the live table structure and
+ *   emits only the ALTER TABLE statements that are needed. On fresh installs it
+ *   runs a CREATE TABLE; on upgrades it adds missing columns and indexes without
+ *   touching existing rows, preventing data loss across plugin updates.
+ *
+ * Why two spaces before PRIMARY KEY:
+ *   dbDelta parses DDL line-by-line with a regex that requires exactly two
+ *   spaces between "PRIMARY KEY" and the opening parenthesis — `PRIMARY KEY  (id)`.
+ *   One space, three spaces, or a tab causes dbDelta to silently mis-parse the
+ *   definition and skip the primary key on creation.
+ *
+ * Why custom tables instead of post meta:
+ *   - High-volume writes: every outgoing email writes a row; wp_postmeta row-level
+ *     locking does not scale to that write rate on busy sites.
+ *   - Indexed queries: compound indexes on (status, created_at) make log list
+ *     queries fast; post meta has no multi-column indexes.
+ *   - Retention/pruning: DELETE WHERE created_at < X on a dedicated table is a
+ *     single efficient statement; purging post meta requires JOIN-heavy queries
+ *     against wp_posts.
+ *   - No post relationship: log entries are transactional records, not content —
+ *     there is no reason for them to live inside the post hierarchy.
+ *
+ * Why Migrator stores the DB version after each migration, not at the end:
+ *   If a run contains three migrations and the second one fails, the first has
+ *   already been applied successfully. Storing the version immediately after
+ *   each successful migration means a subsequent re-run skips the completed
+ *   migration and resumes from the failure point, rather than re-running
+ *   everything and risking duplicate-column errors or data corruption.
+ */

@@ -11,7 +11,6 @@ namespace SendStack\Database\Migrations;
 defined( 'ABSPATH' ) || exit;
 
 use SendStack\Database\Installer;
-use SendStack\Database\Schema;
 
 /**
  * Creates the initial sendstack_logs and sendstack_stats tables.
@@ -26,7 +25,7 @@ class Migration_1_0_0 {
 	 * @since  1.0.0
 	 * @return void
 	 */
-	public function up(): void {
+	public static function up(): void {
 		Installer::install();
 	}
 
@@ -36,7 +35,7 @@ class Migration_1_0_0 {
 	 * @since  1.0.0
 	 * @return void
 	 */
-	public function down(): void {
+	public static function down(): void {
 		Installer::uninstall();
 	}
 }
