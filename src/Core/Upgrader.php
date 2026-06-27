@@ -17,24 +17,35 @@ defined( 'ABSPATH' ) || exit;
  */
 class Upgrader {
 
-	/** @var string wp_options key that stores the currently installed schema version. */
-	private const OPTION_KEY = 'sendstack_db_version';
+	/** @var string wp_options key that stores the currently installed plugin version. */
+	private const OPTION_KEY = 'sendstack_version';
 
 	/**
-	 * Run pending migrations if the installed schema version is behind the target.
+	 * Run pending migrations if the installed plugin version is behind the current one.
+	 *
+	 * Hooked to admin_init — only runs in wp-admin, never on the frontend request path.
 	 *
 	 * @since  1.0.0
 	 * @return void
 	 */
 	public static function maybe_upgrade(): void {
-		$installed = (string) get_option( self::OPTION_KEY, '0.0.0' );
-
-		if ( version_compare( $installed, SENDSTACK_DB_VERSION, '>=' ) ) {
+		// Guard: never slow the frontend. is_admin() is true for AJAX calls too,
+		// which is intentional — admin-AJAX runs in the admin context.
+		if ( ! is_admin() ) {
 			return;
 		}
 
-		// Individual migration steps will be added here as the schema evolves.
+		$installed = (string) get_option( self::OPTION_KEY, '0.0.0' );
 
-		update_option( self::OPTION_KEY, SENDSTACK_DB_VERSION );
+		// version_compare is O(1); this check is safe on every admin page load.
+		if ( version_compare( $installed, SENDSTACK_VERSION, '>=' ) ) {
+			return;
+		}
+
+		// Delegate schema changes to the Migrator, which tracks its own DB version.
+		\SendStack\Database\Migrator::migrate();
+
+		// Update the stored version so this block only executes once per release.
+		update_option( self::OPTION_KEY, SENDSTACK_VERSION );
 	}
 }
