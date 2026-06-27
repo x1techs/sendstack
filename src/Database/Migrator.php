@@ -48,7 +48,7 @@ class Migrator {
 				continue;
 			}
 
-			( new $class() )->up();
+			$class::up();
 
 			update_option( self::OPTION_KEY, $version );
 		}
