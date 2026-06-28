@@ -11,27 +11,27 @@ namespace SendStack\Admin\Screens;
 defined( 'ABSPATH' ) || exit;
 
 use SendStack\Admin\AdminNotices;
-use SendStack\Alerts\AlertManager;
+
 
 /**
  * Renders the alert-channel configuration form and processes saves.
+ *
+ * Channel-specific fields and save logic are wired in Feature 9.
+ * This class provides the screen registration and capability gate.
  *
  * @since 1.0.0
  */
 class AlertsScreen extends AbstractScreen {
 
-	/** @var AlertManager */
-	private $alert_manager;
 
 	/** @var AdminNotices */
 	private $notices;
 
 	/**
-	 * @param AlertManager $alert_manager Alert channel manager.
 	 * @param AdminNotices $notices       Notice manager for save feedback.
 	 */
-	public function __construct( AlertManager $alert_manager, AdminNotices $notices ) {
-		$this->alert_manager = $alert_manager;
+	public function __construct( AdminNotices $notices ) {
+		// Alert manager used in Feature 9.
 		$this->notices       = $notices;
 	}
 
@@ -52,27 +52,22 @@ class AlertsScreen extends AbstractScreen {
 	}
 
 	/**
-	 * Render the alerts configuration screen; delegate to handle_save() when POSTed.
+	 * Render the alerts configuration screen.
+	 *
+	 * Channel-specific forms are added in Feature 9 when the concrete channel
+	 * classes (EmailChannel, SlackChannel, DiscordChannel) are wired in.
 	 *
 	 * @since  1.0.0
 	 * @return void
 	 */
-	public function render(): void {
-		if ( ! current_user_can( $this->capability() ) ) {
-			wp_die( esc_html__( 'You do not have permission to view this page.', 'sendstack' ) );
-		}
-
-		if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
+	protected function content(): void {
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && $this->verify_nonce( 'sendstack_save_alerts' ) ) {
 			$this->handle_save();
 		}
 
-		$channels = $this->alert_manager->channels();
-
-		ob_start();
-		// TODO: include template file from templates/admin/alerts.php.
-		$content = (string) ob_get_clean();
-
-		$this->wrap( $content );
+		?>
+		<p><?php esc_html_e( 'Alert channels are configured in a future release.', 'sendstack' ); ?></p>
+		<?php
 	}
 
 	/**
@@ -82,8 +77,7 @@ class AlertsScreen extends AbstractScreen {
 	 * @return void
 	 */
 	public function handle_save(): void {
-		if ( ! $this->verify_nonce() ) {
-			$this->notices->add( __( 'Security check failed. Please try again.', 'sendstack' ), 'error' );
+		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 

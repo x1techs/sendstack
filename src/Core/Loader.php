@@ -29,6 +29,7 @@ class Loader {
 		\SendStack\Mailer\MailerServiceProvider::class,
 		\SendStack\Logger\LoggerServiceProvider::class,
 		\SendStack\Stats\StatsServiceProvider::class,
+		\SendStack\Admin\AdminServiceProvider::class,
 	);
 
 	/** @var ServiceProvider[] Instantiated providers, ready to be booted. */
