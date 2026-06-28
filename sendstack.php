@@ -28,6 +28,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'SENDSTACK_VERSION', '0.1.0' );
 define( 'SENDSTACK_FILE', __FILE__ );
 define( 'SENDSTACK_PATH', plugin_dir_path( __FILE__ ) );
+define( 'SENDSTACK_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SENDSTACK_URL', plugin_dir_url( __FILE__ ) );
 define( 'SENDSTACK_BASENAME', plugin_basename( __FILE__ ) );
 define( 'SENDSTACK_MIN_PHP', '7.4' );

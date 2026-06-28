@@ -11,8 +11,10 @@ namespace SendStack\Admin\Screens;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Renders the SendStack tools page — diagnostics, test emails, log export,
- * and data reset utilities.
+ * Renders the SendStack tools page.
+ *
+ * Test email and diagnostics tools are wired in Feature 7.
+ * This class provides the screen registration and capability gate.
  *
  * @since 1.0.0
  */
@@ -31,7 +33,7 @@ class ToolsScreen extends AbstractScreen {
 	 * @return string
 	 */
 	public function title(): string {
-		return __( 'SendStack Tools', 'sendstack' );
+		return __( 'Tools', 'sendstack' );
 	}
 
 	/**
@@ -40,15 +42,12 @@ class ToolsScreen extends AbstractScreen {
 	 * @since  1.0.0
 	 * @return void
 	 */
-	public function render(): void {
-		if ( ! current_user_can( $this->capability() ) ) {
-			wp_die( esc_html__( 'You do not have permission to view this page.', 'sendstack' ) );
-		}
-
-		ob_start();
-		// TODO: include template file from templates/admin/tools.php.
-		$content = (string) ob_get_clean();
-
-		$this->wrap( $content );
+	protected function content(): void {
+		?>
+		<div class="sstk-card">
+			<h2 class="sstk-card__title"><?php esc_html_e( 'Send Test Email', 'sendstack' ); ?></h2>
+			<p><?php esc_html_e( 'Test email functionality is available in a future release.', 'sendstack' ); ?></p>
+		</div>
+		<?php
 	}
 }

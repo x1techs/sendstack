@@ -1,0 +1,120 @@
+/**
+ * SendStack Admin Styles
+ *
+ * @package SendStack
+ * @since   1.0.0
+ */
+
+/* Wrapper */
+.sstk-wrap { max-width: 1200px; margin: 20px 0; }
+
+/* -------------------------------------------------------------------------
+   Dashboard stat tiles
+   ------------------------------------------------------------------------- */
+.sstk-stats-tiles {
+	display: flex;
+	gap: 16px;
+	margin-bottom: 24px;
+	flex-wrap: wrap;
+}
+
+.sstk-stat-tile {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 20px 24px;
+	flex: 1;
+	min-width: 200px;
+}
+
+.sstk-stat-tile__value {
+	font-size: 32px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: #1d2327;
+}
+
+.sstk-stat-tile__label {
+	font-size: 13px;
+	color: #646970;
+	margin-top: 4px;
+}
+
+.sstk-stat-tile--success .sstk-stat-tile__value { color: #00a32a; }
+.sstk-stat-tile--failure .sstk-stat-tile__value { color: #d63638; }
+
+/* -------------------------------------------------------------------------
+   Settings form
+   ------------------------------------------------------------------------- */
+.sstk-settings-form {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 24px;
+}
+
+.sstk-settings-form .form-table th { width: 200px; }
+
+/* -------------------------------------------------------------------------
+   Provider tabs
+   ------------------------------------------------------------------------- */
+.sstk-provider-tabs {
+	display: flex;
+	gap: 0;
+	border-bottom: 1px solid #c3c4c7;
+	margin-bottom: 24px;
+}
+
+.sstk-provider-tab {
+	padding: 10px 20px;
+	text-decoration: none;
+	color: #646970;
+	border: 1px solid transparent;
+	border-bottom: none;
+	margin-bottom: -1px;
+}
+
+.sstk-provider-tab--active {
+	background: #fff;
+	color: #1d2327;
+	border-color: #c3c4c7;
+	border-radius: 4px 4px 0 0;
+}
+
+/* -------------------------------------------------------------------------
+   Status badges
+   ------------------------------------------------------------------------- */
+.sstk-status {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.sstk-status--sent     { background: #edfaef; color: #00a32a; }
+.sstk-status--failed   { background: #fce4e4; color: #d63638; }
+.sstk-status--queued   { background: #f0f0f1; color: #646970; }
+.sstk-status--retrying { background: #fef8ee; color: #dba617; }
+
+/* -------------------------------------------------------------------------
+   Notices
+   ------------------------------------------------------------------------- */
+.sstk-notice { margin: 16px 0; }
+
+/* -------------------------------------------------------------------------
+   Tools / Cards
+   ------------------------------------------------------------------------- */
+.sstk-card {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 24px;
+	margin-bottom: 16px;
+}
+
+.sstk-card__title {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 0 0 12px;
+}

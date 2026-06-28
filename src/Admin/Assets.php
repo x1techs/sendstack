@@ -19,7 +19,6 @@ defined( 'ABSPATH' ) || exit;
 class Assets {
 
 	/** @var string[] Page hook suffixes that belong to SendStack. */
-	private $sendstack_hooks = array();
 
 	/** @var string Base URL for the plugin assets directory. */
 	private $assets_url;
@@ -67,10 +66,13 @@ class Assets {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'sendstack_admin' ),
 				'i18n'    => array(
-					'sending'   => __( 'Sending…', 'sendstack' ),
-					'verifying' => __( 'Verifying…', 'sendstack' ),
-					'success'   => __( 'Success!', 'sendstack' ),
-					'error'     => __( 'An error occurred.', 'sendstack' ),
+					'sending'        => __( 'Sending…', 'sendstack' ),
+					'verifying'      => __( 'Verifying…', 'sendstack' ),
+					'success'        => __( 'Success!', 'sendstack' ),
+					'error'          => __( 'An error occurred.', 'sendstack' ),
+					'show'           => __( 'Show', 'sendstack' ),
+					'hide'           => __( 'Hide', 'sendstack' ),
+					'confirm_delete' => __( 'Are you sure you want to delete the selected log entries? This cannot be undone.', 'sendstack' ),
 				),
 			)
 		);
