@@ -27,6 +27,8 @@ class Loader {
 	 */
 	private $provider_classes = array(
 		\SendStack\Mailer\MailerServiceProvider::class,
+		\SendStack\Logger\LoggerServiceProvider::class,
+		\SendStack\Stats\StatsServiceProvider::class,
 	);
 
 	/** @var ServiceProvider[] Instantiated providers, ready to be booted. */
