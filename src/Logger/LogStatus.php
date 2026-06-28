@@ -40,6 +40,17 @@ final class LogStatus {
 		return array( self::QUEUED, self::SENT, self::FAILED, self::RETRYING );
 	}
 
+	/**
+	 * Check whether a string is a valid status value.
+	 *
+	 * @since  1.0.0
+	 * @param  string $status Value to test.
+	 * @return bool
+	 */
+	public static function is_valid( string $status ): bool {
+		return in_array( $status, self::all(), true );
+	}
+
 	/** Not instantiable. */
 	private function __construct() {}
 }
