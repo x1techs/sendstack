@@ -13,12 +13,17 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Mailer driver interface.
  *
+ * Concrete drivers extend AbstractMailer and implement slug(), label(), and
+ * do_send(). Everything else (hook firing, logging) is handled by the base.
+ *
  * @since 1.0.0
  */
 interface MailerInterface {
 
 	/**
-	 * Machine-readable identifier for this driver (e.g. "smtp", "sendgrid").
+	 * Machine-readable identifier (e.g. "smtp", "sendgrid").
+	 *
+	 * Must be unique across all registered drivers.
 	 *
 	 * @since  1.0.0
 	 * @return string
@@ -45,18 +50,43 @@ interface MailerInterface {
 	/**
 	 * Ping the provider to confirm credentials are valid.
 	 *
+	 * Returns a successful SendResult when the connection works, or a
+	 * failure result with a descriptive error_message when it does not.
+	 *
 	 * @since  1.0.0
-	 * @return bool True when the connection succeeds.
+	 * @return SendResult
 	 */
-	public function verify_connection(): bool;
+	public function verify_connection(): SendResult;
 
 	/**
 	 * Return a list of feature keys this driver supports.
 	 *
-	 * Examples: 'html', 'attachments', 'bulk', 'oauth'.
+	 * Standard keys: 'html', 'plain', 'attachments', 'custom_headers', 'oauth'.
 	 *
 	 * @since  1.0.0
 	 * @return string[]
 	 */
 	public function supports(): array;
 }
+
+/*
+ * ============================================================
+ * Concepts in this file
+ * ============================================================
+ *
+ * WHY AN INTERFACE AND NOT JUST AN ABSTRACT CLASS?
+ * The interface is the public contract that any third party (or future
+ * built-in) provider must satisfy. It documents the minimum API surface
+ * without coupling callers to any particular base class. MailerManager only
+ * knows about MailerInterface, so a driver can extend something else entirely.
+ *
+ * verify_connection() RETURNS SendResult, NOT bool
+ * Returning bool throws away the reason for failure. The admin UI needs to
+ * show the user WHY a connection failed ("invalid API key", "network timeout",
+ * etc.). A rich value object costs nothing compared to debugging blind errors.
+ *
+ * supports() AS AN ARRAY OF STRINGS
+ * Rather than a boolean matrix of capabilities, a string bag lets drivers
+ * advertise arbitrary features and lets the UI gate UI affordances on them
+ * without hardcoding knowledge of every possible feature.
+ */
