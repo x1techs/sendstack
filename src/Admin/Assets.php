@@ -18,8 +18,6 @@ defined( 'ABSPATH' ) || exit;
  */
 class Assets {
 
-	/** @var string[] Page hook suffixes that belong to SendStack. */
-
 	/** @var string Base URL for the plugin assets directory. */
 	private $assets_url;
 
@@ -36,14 +34,31 @@ class Assets {
 	}
 
 	/**
-	 * Register all plugin scripts and styles (without enqueueing them).
-	 *
-	 * Hooked to admin_init so handles are available before enqueue runs.
+	 * Hook into admin_enqueue_scripts for conditional asset loading.
 	 *
 	 * @since  1.0.0
 	 * @return void
 	 */
 	public function register(): void {
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+	}
+
+	/**
+	 * Register and enqueue assets on SendStack screens.
+	 *
+	 * Called inside admin_enqueue_scripts — the correct hook for
+	 * wp_register_style / wp_register_script. Registers first, then
+	 * enqueues, all in one pass on SendStack pages only.
+	 *
+	 * @since  1.0.0
+	 * @param  string $hook Current page hook suffix.
+	 * @return void
+	 */
+	public function enqueue( string $hook ): void {
+		if ( ! $this->is_sendstack_page( $hook ) ) {
+			return;
+		}
+
 		wp_register_style(
 			'sendstack-admin',
 			$this->assets_url . 'css/admin.css',
@@ -76,21 +91,6 @@ class Assets {
 				),
 			)
 		);
-	}
-
-	/**
-	 * Enqueue assets when on a SendStack screen.
-	 *
-	 * Hooked to admin_enqueue_scripts.
-	 *
-	 * @since  1.0.0
-	 * @param  string $hook Current page hook suffix.
-	 * @return void
-	 */
-	public function enqueue( string $hook ): void {
-		if ( ! $this->is_sendstack_page( $hook ) ) {
-			return;
-		}
 
 		wp_enqueue_style( 'sendstack-admin' );
 		wp_enqueue_script( 'sendstack-admin' );
