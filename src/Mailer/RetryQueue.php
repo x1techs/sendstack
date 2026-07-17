@@ -10,6 +10,8 @@ namespace SendStack\Mailer;
 
 defined( 'ABSPATH' ) || exit;
 
+use SendStack\Core\CronHooks;
+
 /**
  * Serialises failed MailPayloads into a wp_options queue and processes them
  * via a scheduled WP-Cron event.
@@ -18,16 +20,23 @@ defined( 'ABSPATH' ) || exit;
  */
 class RetryQueue {
 
-	/** @var MailerManager */
+	/**
+	 * Mailer registry used to retry queued messages.
+	 *
+	 * @var MailerManager
+	 */
 	private $manager;
 
-	/** @var string WP-Cron hook name. */
-	public const CRON_HOOK = 'sendstack_process_retry_queue';
-
-	/** @var string Option key for the queue. */
+	/**
+	 * WordPress option key used to persist the retry queue.
+	 *
+	 * @var string
+	 */
 	private const OPTION_KEY = 'sendstack_retry_queue';
 
 	/**
+	 * Store the mailer manager dependency.
+	 *
 	 * @param MailerManager $manager Active mailer manager.
 	 */
 	public function __construct( MailerManager $manager ) {
@@ -54,8 +63,8 @@ class RetryQueue {
 
 		update_option( self::OPTION_KEY, $queue, false );
 
-		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
-			wp_schedule_single_event( time() + 300, self::CRON_HOOK );
+		if ( ! wp_next_scheduled( CronHooks::PROCESS_RETRY_QUEUE ) ) {
+			wp_schedule_single_event( time() + 300, CronHooks::PROCESS_RETRY_QUEUE );
 		}
 	}
 
@@ -101,13 +110,15 @@ class RetryQueue {
 	public function clear(): void {
 		delete_option( self::OPTION_KEY );
 
-		$timestamp = wp_next_scheduled( self::CRON_HOOK );
+		$timestamp = wp_next_scheduled( CronHooks::PROCESS_RETRY_QUEUE );
 		if ( false !== $timestamp ) {
-			wp_unschedule_event( $timestamp, self::CRON_HOOK );
+			wp_unschedule_event( $timestamp, CronHooks::PROCESS_RETRY_QUEUE );
 		}
 	}
 
 	/**
+	 * Load the persisted retry queue.
+	 *
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function load_queue(): array {
