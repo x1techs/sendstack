@@ -48,6 +48,11 @@ current implementation.
 - **2026-07-17 — Core problem 1 resolved:** Cron hook names now use shared
   constants, and deactivation was verified to remove all SendStack cron events.
   See [Canonical cron hooks and deactivation cleanup](../solutions/2026-07-17-cron-hook-constants-solution.md).
+- **2026-07-18 — SMTP class-loading failure resolved:** SendStack now loads
+  WordPress's bundled PHPMailer dependencies before constructing the SMTP
+  transport. A clean `wp_mail()` request completed through local SMTP without
+  PHPMailer being preloaded. See [WordPress PHPMailer loading for SMTP
+  delivery](../solutions/2026-07-18-smtp-phpmailer-loading-solution.md).
 
 ## Runtime evidence
 
@@ -404,7 +409,7 @@ SMTP, logging, stats, migration, AJAX, or admin-action paths.
 Solution documents should be created in `../solutions/` in this order:
 
 1. ~~Centralize cron hook names and correct deactivation cleanup.~~ Resolved 2026-07-17.
-2. Repair the SMTP/PHPMailer load path and add an end-to-end Mailpit test.
+2. ~~Repair the SMTP/PHPMailer load path and add an end-to-end Mailpit test.~~ Resolved 2026-07-18.
 3. Choose one `MailerManager::handle_send()` contract and update every consumer.
 4. Correct resend, verification, failover, and retry behavior.
 5. Fix the remaining migration-state gating issue.

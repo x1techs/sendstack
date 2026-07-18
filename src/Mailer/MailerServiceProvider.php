@@ -54,13 +54,22 @@ class MailerServiceProvider extends ServiceProvider {
 	 * @return void
 	 */
 	public function boot(): void {
-		/** @var MailerManager $manager */
+		/**
+		 * Shared manager populated with every available mailer.
+		 *
+		 * @var MailerManager $manager
+		 */
 		$manager = $this->container->make( 'mailer.manager' );
 
 		// Load SMTP connection config saved under the 'smtp' connection key.
 		$settings    = (array) get_option( 'sendstack_settings', array() );
 		$connections = isset( $settings['connections']['smtp'] ) ? (array) $settings['connections']['smtp'] : array();
-		$manager->register( new Providers\SmtpMailer( $connections ) );
+		$manager->register(
+			new Providers\SmtpMailer(
+				$connections,
+				new WordPressPhpMailerFactory()
+			)
+		);
 
 		// Let other plugins register their own drivers before the hook fires.
 		do_action( 'sendstack_register_mailers', $manager );
