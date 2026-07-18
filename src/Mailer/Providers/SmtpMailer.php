@@ -13,6 +13,10 @@ defined( 'ABSPATH' ) || exit;
 use SendStack\Mailer\AbstractMailer;
 use SendStack\Mailer\MailPayload;
 use SendStack\Mailer\SendResult;
+use SendStack\Mailer\WordPressPhpMailerFactory;
+
+// PHPMailer exposes these public transport properties with upstream camel-case names.
+// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 /**
  * Sends mail via a user-configured SMTP server using PHPMailer directly.
@@ -26,6 +30,34 @@ use SendStack\Mailer\SendResult;
 class SmtpMailer extends AbstractMailer {
 
 	/**
+	 * Factory that loads and constructs WordPress's bundled PHPMailer.
+	 *
+	 * @since 0.1.0
+	 * @var WordPressPhpMailerFactory
+	 */
+	private $phpmailer_factory;
+
+	/**
+	 * Store SMTP settings and the WordPress PHPMailer factory.
+	 *
+	 * @since 0.1.0
+	 * @param array<string,mixed>            $options           SMTP connection settings.
+	 * @param WordPressPhpMailerFactory|null $phpmailer_factory Optional factory override.
+	 */
+	public function __construct(
+		array $options = array(),
+		?WordPressPhpMailerFactory $phpmailer_factory = null
+	) {
+		parent::__construct( $options );
+
+		$this->phpmailer_factory = null !== $phpmailer_factory
+			? $phpmailer_factory
+			: new WordPressPhpMailerFactory();
+	}
+
+	/**
+	 * Return the SMTP provider slug.
+	 *
 	 * @since  1.0.0
 	 * @return string
 	 */
@@ -34,6 +66,8 @@ class SmtpMailer extends AbstractMailer {
 	}
 
 	/**
+	 * Return the translated SMTP provider label.
+	 *
 	 * @since  1.0.0
 	 * @return string
 	 */
@@ -42,6 +76,8 @@ class SmtpMailer extends AbstractMailer {
 	}
 
 	/**
+	 * Return the message features supported by SMTP delivery.
+	 *
 	 * @since  1.0.0
 	 * @return string[]
 	 */
@@ -68,7 +104,14 @@ class SmtpMailer extends AbstractMailer {
 			);
 		}
 
-		$phpmailer = $this->make_phpmailer();
+		try {
+			$phpmailer = $this->make_phpmailer();
+		} catch ( \Throwable $e ) {
+			return SendResult::failure(
+				$e->getMessage(),
+				'phpmailer_initialization_failed'
+			);
+		}
 
 		try {
 			// Sender — payload wins; fall back to stored option, then WP defaults.
@@ -129,7 +172,11 @@ class SmtpMailer extends AbstractMailer {
 				$phpmailer->addCustomHeader( $name, $value );
 			}
 
-			/** @var \PHPMailer\PHPMailer\PHPMailer $phpmailer */
+			/**
+			 * Allow integrations to customize the configured transport.
+			 *
+			 * @var \PHPMailer\PHPMailer\PHPMailer $phpmailer
+			 */
 			$phpmailer = apply_filters( 'sendstack_smtp_phpmailer', $phpmailer, $payload );
 
 			$phpmailer->send();
@@ -165,8 +212,16 @@ class SmtpMailer extends AbstractMailer {
 			);
 		}
 
-		$phpmailer             = $this->make_phpmailer();
-		$phpmailer->SMTPDebug  = 0;
+		try {
+			$phpmailer = $this->make_phpmailer();
+		} catch ( \Throwable $e ) {
+			return SendResult::failure(
+				$e->getMessage(),
+				'phpmailer_initialization_failed'
+			);
+		}
+
+		$phpmailer->SMTPDebug = 0;
 
 		try {
 			if ( $phpmailer->smtpConnect() ) {
@@ -204,7 +259,7 @@ class SmtpMailer extends AbstractMailer {
 	 * @return \PHPMailer\PHPMailer\PHPMailer
 	 */
 	private function make_phpmailer(): \PHPMailer\PHPMailer\PHPMailer {
-		$phpmailer = new \PHPMailer\PHPMailer\PHPMailer( true );
+		$phpmailer = $this->phpmailer_factory->create();
 		$phpmailer->isSMTP();
 
 		$phpmailer->Host = (string) $this->get_option( 'host', '' );
@@ -216,7 +271,8 @@ class SmtpMailer extends AbstractMailer {
 			$phpmailer->SMTPSecure  = '';
 			$phpmailer->SMTPAutoTLS = false;
 		} else {
-			$phpmailer->SMTPSecure = $encryption; // 'tls' or 'ssl'
+			// Use the secure transport selected in the SMTP settings.
+			$phpmailer->SMTPSecure = $encryption;
 		}
 
 		$username            = (string) $this->get_option( 'username', '' );

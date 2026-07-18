@@ -8,6 +8,7 @@
 
 // Ensure ABSPATH is set so plugin-file guards pass when files are loaded by the autoloader.
 defined( 'ABSPATH' ) || define( 'ABSPATH', dirname( __DIR__ ) . '/wordpress/' );
+defined( 'WPINC' ) || define( 'WPINC', 'wp-includes' );
 
 require_once dirname( __DIR__ ) . '/vendor/autoload.php';
 
