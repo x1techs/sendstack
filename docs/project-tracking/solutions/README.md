@@ -6,6 +6,7 @@ audits in `../audits/`.
 ## Completed solutions
 
 - [2026-07-17: Canonical cron hooks and deactivation cleanup](2026-07-17-cron-hook-constants-solution.md)
+- [2026-07-18: WordPress PHPMailer loading for SMTP delivery](2026-07-18-smtp-phpmailer-loading-solution.md)
 
 ## Naming convention
 
@@ -31,7 +32,7 @@ Each solution document should include:
 ## Planned solution sequence
 
 1. ~~Canonical cron hook names and deactivation cleanup.~~ Completed 2026-07-17.
-2. SMTP/PHPMailer loading and end-to-end delivery.
+2. ~~SMTP/PHPMailer loading and end-to-end delivery.~~ Completed 2026-07-18.
 3. Mailer contract consistency across all consumers.
 4. AJAX resend/verification, failover, and retry behavior.
 5. Remaining migration lifecycle fixes.

@@ -23,6 +23,7 @@ their conclusions can be tied to a specific repository state.
 See the [solutions index](solutions/README.md).
 
 - [2026-07-17: Canonical cron hooks and deactivation cleanup](solutions/2026-07-17-cron-hook-constants-solution.md)
+- [2026-07-18: WordPress PHPMailer loading for SMTP delivery](solutions/2026-07-18-smtp-phpmailer-loading-solution.md)
 
 ## Status definitions
 
