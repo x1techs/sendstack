@@ -10,6 +10,8 @@ namespace SendStack\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
+use SendStack\Core\CronHooks;
+
 /**
  * Schedules and runs periodic log pruning based on the site's configured
  * retention period (stored under the sendstack_logs_config option key).
@@ -18,13 +20,16 @@ defined( 'ABSPATH' ) || exit;
  */
 class LogPruner {
 
-	/** @var LogRepository */
+	/**
+	 * Log data access used by the retention job.
+	 *
+	 * @var LogRepository
+	 */
 	private $repository;
 
-	/** @var string WP-Cron hook name. */
-	public const CRON_HOOK = 'sendstack_prune_logs';
-
 	/**
+	 * Store the log repository dependency.
+	 *
 	 * @since 1.0.0
 	 * @param LogRepository $repository Injected log repository.
 	 */
@@ -42,7 +47,7 @@ class LogPruner {
 	 * @return void
 	 */
 	public function register(): void {
-		add_action( self::CRON_HOOK, array( $this, 'run' ) );
+		add_action( CronHooks::PRUNE_LOGS, array( $this, 'run' ) );
 	}
 
 	/**
@@ -54,8 +59,8 @@ class LogPruner {
 	 * @return void
 	 */
 	public function schedule(): void {
-		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
-			wp_schedule_event( time(), 'daily', self::CRON_HOOK );
+		if ( ! wp_next_scheduled( CronHooks::PRUNE_LOGS ) ) {
+			wp_schedule_event( time(), 'daily', CronHooks::PRUNE_LOGS );
 		}
 	}
 
@@ -68,9 +73,9 @@ class LogPruner {
 	 * @return void
 	 */
 	public function unschedule(): void {
-		$timestamp = wp_next_scheduled( self::CRON_HOOK );
+		$timestamp = wp_next_scheduled( CronHooks::PRUNE_LOGS );
 		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, self::CRON_HOOK );
+			wp_unschedule_event( $timestamp, CronHooks::PRUNE_LOGS );
 		}
 	}
 
